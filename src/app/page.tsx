@@ -1,69 +1,346 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState, useCallback, useEffect } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { OCCASIONS, getOccasion } from '@/data/occasions';
+import { GARMENTS_DATA, StudioItem } from '@/data/wardrobe';
+import { computeDeterministicAudit } from '@/data/rubric';
+import type { GarmentCategory, OccasionId, CulturalAuditResult } from '@/types';
+import WardrobeStudio from '@/components/WardrobeStudio';
+import StudioCanvas from '@/components/StudioCanvas';
+import CulturalFeedback from '@/components/CulturalFeedback';
+import LookbookModal from '@/components/LookbookModal';
+import { extractFabricProperties } from '@/utils/fabricExtractor';
+
+export default function StudioPage() {
+  // ── Core outfit state (Managed in Memory State — 0 quota overflow risk) ───
+  const [selectedOccasion, setSelectedOccasion] = useState<OccasionId>('street');
+  const [selectedGarmentId, setSelectedGarmentId] = useState<GarmentCategory>('ao-ngu-than');
+  const [selectedColor, setSelectedColor] = useState<string>(GARMENTS_DATA[0].palette[0].hex);
+  const [customGarment, setCustomGarment] = useState<StudioItem | null>(null);
+  const [selectedShoe, setSelectedShoe] = useState<StudioItem | null>(null);
+  const [selectedAccessory, setSelectedAccessory] = useState<StudioItem | null>(null);
+  const [customItems, setCustomItems] = useState<StudioItem[]>([]);
+
+  // ── AI audit state ────────────────────────────────────────────────────────
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [isAiAudited, setIsAiAudited] = useState(false);
+  const [showLookbook, setShowLookbook] = useState(false);
+
+  // Initialize with deterministic rubric score
+  const [auditResult, setAuditResult] = useState<CulturalAuditResult>(() => {
+    return computeDeterministicAudit({
+      occasionId: 'street',
+      occasionLabel: 'Dạo Phố',
+      garmentId: 'ao-ngu-than',
+      garmentName: 'Áo Ngũ Thân',
+      garmentColor: GARMENTS_DATA[0].palette[0].hex,
+      shoeId: '',
+      shoeName: '',
+      accessoryId: '',
+      accessoryName: '',
+    });
+  });
+
+  const selectedGarment =
+    GARMENTS_DATA.find((g) => g.id === selectedGarmentId) ?? GARMENTS_DATA[0];
+  const currentOccasion = getOccasion(selectedOccasion);
+
+  // Live Deterministic Feedback: Only calculates when Gemini hasn't locked the audit
+  useEffect(() => {
+    if (!isAiAudited) {
+      const activeGarmentId = customGarment ? customGarment.id : selectedGarment.id;
+      const activeGarmentName = customGarment ? customGarment.name : selectedGarment.name;
+      const liveResult = computeDeterministicAudit({
+        occasionId: selectedOccasion,
+        occasionLabel: currentOccasion.label,
+        garmentId: activeGarmentId,
+        garmentName: activeGarmentName,
+        garmentColor: selectedColor,
+        shoeId: selectedShoe?.id ?? '',
+        shoeName: selectedShoe?.name ?? '',
+        accessoryId: selectedAccessory?.id ?? '',
+        accessoryName: selectedAccessory?.name ?? '',
+      });
+      setAuditResult(liveResult);
+    }
+  }, [
+    isAiAudited,
+    selectedOccasion,
+    currentOccasion.label,
+    selectedGarment.id,
+    selectedGarment.name,
+    selectedColor,
+    customGarment,
+    selectedShoe,
+    selectedAccessory,
+  ]);
+
+  // Handle UGC uploads: 1-Click direct slot assignment without destructive pixel scrubbing
+  const handleAddUGC = useCallback(async (item: StudioItem) => {
+    if (item.anchorSlot === 'garment') {
+      let dominantColor = item.dominantColor;
+      let patternUrl = item.patternUrl;
+
+      // Extract fabric color for the indicator badge if not provided
+      if ((!dominantColor || !patternUrl) && item.renderAssetUrl) {
+        try {
+          const extracted = await extractFabricProperties(item.renderAssetUrl);
+          dominantColor = dominantColor || extracted.dominantColor;
+          patternUrl = patternUrl || extracted.patternUrl;
+        } catch (e) {
+          console.warn('[handleAddUGC] fabric color extraction fallback:', e);
+        }
+      }
+
+      const garmentItem: StudioItem = {
+        ...item,
+        dominantColor: dominantColor || '#8B1E1E',
+        patternUrl: patternUrl || item.renderAssetUrl,
+      };
+
+      setCustomItems((prev) => [garmentItem, ...prev]);
+      setCustomGarment(garmentItem);
+      if (dominantColor) {
+        setSelectedColor(dominantColor);
+      }
+      // Re-enable live feedback for newly uploaded garment
+      setIsAiAudited(false);
+      return;
+    }
+
+    setCustomItems((prev) => [item, ...prev]);
+    if (item.anchorSlot === 'feet') {
+      setSelectedShoe(item);
+    } else {
+      setSelectedAccessory(item);
+    }
+  }, []);
+
+  // Full AI Cultural Audit via Gemini 2.0 Flash
+  const handleAudit = useCallback(async () => {
+    setIsAuditing(true);
+    try {
+      const activeGarmentId = customGarment ? customGarment.id : selectedGarment.id;
+      const activeGarmentName = customGarment ? customGarment.name : selectedGarment.name;
+      const isCustom = !!customGarment;
+      const res = await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          occasion: {
+            id: selectedOccasion,
+            label: currentOccasion.label,
+            strictnessLevel: currentOccasion.strictnessLevel,
+          },
+          garment: {
+            id: activeGarmentId,
+            name: activeGarmentName,
+            isCustom,
+            color: selectedColor,
+            sensitivity: customGarment
+              ? 'TRUNG BÌNH (Trang phục truyền thống cách tân / trang phục cá nhân)'
+              : selectedGarment.id === 'ao-nhat-binh'
+              ? 'RẤT CAO (Lễ phục cung đình triều Nguyễn)'
+              : 'TRUNG BÌNH (Trang phục truyền thống chuẩn mực)',
+          },
+          shoes: selectedShoe ? { id: selectedShoe.id, name: selectedShoe.name } : null,
+          accessory: selectedAccessory
+            ? { id: selectedAccessory.id, name: selectedAccessory.name }
+            : null,
+          occasionId: selectedOccasion,
+          garmentId: activeGarmentId,
+          garmentName: activeGarmentName,
+          garmentColor: selectedColor,
+          footwear: selectedShoe ? [selectedShoe.name] : [],
+          accessories: selectedAccessory ? [selectedAccessory.name] : [],
+          garmentImage: customGarment?.patternUrl || customGarment?.renderAssetUrl || null,
+        }),
+      });
+
+      if (!res.ok) throw new Error('audit failed');
+      const data: CulturalAuditResult = await res.json();
+      setAuditResult(data);
+      setIsAiAudited(true); // Lock Gemini deep feedback from being overwritten by ping-pong useEffect
+    } catch {
+      // Deterministic fallback guarantees accurate rubric score even if offline
+      const activeGarmentId = customGarment ? customGarment.id : selectedGarment.id;
+      const activeGarmentName = customGarment ? customGarment.name : selectedGarment.name;
+      const fallback = computeDeterministicAudit({
+        occasionId: selectedOccasion,
+        occasionLabel: currentOccasion.label,
+        garmentId: activeGarmentId,
+        garmentName: activeGarmentName,
+        garmentColor: selectedColor,
+        shoeId: selectedShoe?.id ?? '',
+        shoeName: selectedShoe?.name ?? '',
+        accessoryId: selectedAccessory?.id ?? '',
+        accessoryName: selectedAccessory?.name ?? '',
+      });
+      setAuditResult(fallback);
+    } finally {
+      setIsAuditing(false);
+    }
+  }, [
+    selectedOccasion,
+    currentOccasion.label,
+    currentOccasion.strictnessLevel,
+    selectedGarment.id,
+    selectedGarment.name,
+    selectedGarmentId,
+    selectedColor,
+    customGarment,
+    selectedShoe,
+    selectedAccessory,
+  ]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="h-dvh flex flex-col overflow-hidden bg-[#FAF8F5]">
+      {/* ── Top Bar ── */}
+      <header className="shrink-0 px-4 py-2 border-b border-[#E8E2D8] bg-white/80 backdrop-blur-md z-30">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-[family-name:var(--font-playfair)] font-bold text-lg text-[#1F1E1D]">
+              Sắc Việt
+            </span>
+            <span className="hidden sm:inline text-xs text-[#9A8F84] font-mono">
+              • Phòng Thử Đồ & Thẩm Định Văn Hóa AI
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Gemini 2.0 Flash Active
+            </span>
+            <span className="text-[11px] font-mono text-[#9A8F84]">AI Arena 2026</span>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </header>
+
+      {/* ── SPLIT-SCREEN MAIN STUDIO ── */}
+      <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto flex flex-col lg:flex-row overflow-hidden">
+        {/* ── LEFT COLUMN: Controls & Wardrobe Dock ── */}
+        <aside className="w-full lg:w-[380px] xl:w-[410px] shrink-0 border-b lg:border-b-0 lg:border-r border-[#E8E2D8] bg-white overflow-y-auto custom-scroll p-4 lg:p-5 flex flex-col">
+          <WardrobeStudio
+            selectedOccasion={selectedOccasion}
+            onSelectOccasion={(occ) => {
+              setSelectedOccasion(occ);
+              setIsAiAudited(false);
+            }}
+            selectedGarmentId={selectedGarmentId}
+            selectedColor={selectedColor}
+            customGarment={customGarment}
+            onSelectGarment={(id) => {
+              setSelectedGarmentId(id);
+              setCustomGarment(null); // Reset to preset vector robe
+              setIsAiAudited(false);
+              const g = GARMENTS_DATA.find((item) => item.id === id);
+              if (g) setSelectedColor(g.palette[0].hex);
+            }}
+            onSelectCustomGarment={(item) => {
+              setCustomGarment(item);
+              setIsAiAudited(false);
+              if (item.dominantColor) {
+                setSelectedColor(item.dominantColor);
+              }
+            }}
+            onSelectColor={setSelectedColor}
+            selectedShoe={selectedShoe}
+            selectedAccessory={selectedAccessory}
+            onSelectShoe={setSelectedShoe}
+            onSelectAccessory={setSelectedAccessory}
+            customItems={customItems}
+            onAddUGC={handleAddUGC}
+          />
+        </aside>
+
+        {/* ── RIGHT COLUMN: Live Studio Canvas + Cultural Compass ── */}
+        <section className="flex-1 min-w-0 overflow-y-auto custom-scroll p-4 lg:p-6 bg-[#FAF8F5]">
+          <div className="max-w-5xl mx-auto flex flex-col gap-5">
+            {/* Active Outfit Status Pill Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-[#E8E2D9] shadow-xs">
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="text-[10px] font-bold uppercase text-[#9A8F84] tracking-wider mr-1">
+                  Đang phối:
+                </span>
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-[#1F1E1D] text-white">
+                  {currentOccasion.emoji} {currentOccasion.label}
+                </span>
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-[#D4AF37]/15 text-[#8A7120] border border-[#D4AF37]/30">
+                  👘 {customGarment ? customGarment.name : selectedGarment.name}
+                </span>
+                {selectedShoe && (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    👟 {selectedShoe.name}
+                  </span>
+                )}
+                {selectedAccessory && (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
+                    ✨ {selectedAccessory.name}
+                  </span>
+                )}
+              </div>
+
+              {isAiAudited && (
+                <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  Đã thẩm định sâu cùng Gemini
+                </span>
+              )}
+            </div>
+
+            {/* Split Screen Stage: Canvas on Left, Cultural Compass Card on Right */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+              {/* Studio Canvas Stage */}
+              <div className="xl:col-span-6 w-full flex justify-center">
+                <StudioCanvas
+                  garmentName={selectedGarment.name}
+                  garmentColor={selectedColor}
+                  customGarment={customGarment}
+                  selectedShoes={selectedShoe}
+                  selectedAccessory={selectedAccessory}
+                />
+              </div>
+
+              {/* Cultural Compass Card */}
+              <div className="xl:col-span-6 w-full flex justify-center">
+                <CulturalFeedback
+                  result={auditResult}
+                  isLoading={isAuditing}
+                  onReAudit={handleAudit}
+                  onSelectColor={setSelectedColor}
+                  onExportLookbook={() => setShowLookbook(true)}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
+
+      {/* ── Lookbook Share Modal ── */}
+      <AnimatePresence>
+        {showLookbook && (
+          <LookbookModal
+            onClose={() => setShowLookbook(false)}
+            auditResult={auditResult}
+            occasionLabel={currentOccasion.label}
+            garmentName={customGarment ? customGarment.name : selectedGarment.name}
+            garmentColor={selectedColor}
+            customGarment={customGarment}
+            selectedShoes={selectedShoe}
+            selectedAccessory={selectedAccessory}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Footer ── */}
+      <footer className="shrink-0 px-4 py-2 border-t border-[#E8E2D9] bg-white/70 text-[10px] text-[#9A8F84] font-mono">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <span>Sắc Việt (Co-Mix Studio) · AI Arena VNU × Google 2026</span>
+          <span>Bảo Tồn Di Sản · Thẩm Định Văn Hóa Chuẩn Mực</span>
+        </div>
+      </footer>
     </div>
   );
 }

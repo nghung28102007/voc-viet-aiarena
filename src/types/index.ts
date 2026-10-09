@@ -17,7 +17,7 @@ export interface Garment {
   silhouetteId: string;
 }
 
-export type AccessoryCategory = 'accessory' | 'footwear';
+export type AccessoryCategory = 'accessory' | 'footwear' | 'garment';
 
 export interface AccessoryItem {
   id: string;
@@ -60,9 +60,10 @@ export interface CulturalAuditResult {
   score: number;
   status: AuditStatus;
   badgeTitle: string;
+  summary: string;
   culturalInsight: string;
-  correctionNotice: string | null;
-  harmonyAnalysis: HarmonyAnalysis;
+  correctionNotice?: string | null;
+  harmonyAnalysis?: HarmonyAnalysis;
   recommendedPalette: PaletteChip[];
 }
 

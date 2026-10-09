@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
+/* ─── Brand Tokens ─────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --cream: #FDFBF7;
+  --ink: #1F1E1D;
+  --cinnabar: #8B1E1E;
+  --gold: #D4AF37;
+  --gold-light: #E8C84A;
+  --sage: #2D6A4F;
+  --card-bg: #FAF7F2;
+  --border: #E8E2D9;
+  --muted: #9A8F84;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ─── Base ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+html { scroll-behavior: smooth; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--cream);
+  color: var(--ink);
+  font-family: 'Be Vietnam Pro', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100dvh;
+}
+
+/* ─── Dot-Grid Canvas Background ───────────────────────────────────────────── */
+.dot-grid {
+  background-image: radial-gradient(circle, #C8B98A40 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.custom-scroll::-webkit-scrollbar { width: 4px; }
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* ─── Score Arc ─────────────────────────────────────────────────────────────── */
+@property --score-pct {
+  syntax: '<percentage>';
+  initial-value: 0%;
+  inherits: false;
+}
+
+/* ─── Status Badge Colors ───────────────────────────────────────────────────── */
+.badge-safe    { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+.badge-caution { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+.badge-violation { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+
+/* ─── Palette Chip ──────────────────────────────────────────────────────────── */
+.palette-chip {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.palette-chip:hover {
+  transform: scale(1.18);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+}
+.palette-chip.selected {
+  outline: 2.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ─── Garment Silhouette ────────────────────────────────────────────────────── */
+.garment-silhouette {
+  filter: drop-shadow(0 8px 32px rgba(0,0,0,0.18));
+  transition: filter 0.3s ease;
+}
+
+/* ─── Skeleton Loader ───────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #EDE8E0 25%, #F7F3ED 50%, #EDE8E0 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 8px;
+}
+
+/* ─── Micro-Interactions ────────────────────────────────────────────────────── */
+.item-card {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.18s ease,
+              border-color 0.18s ease;
+}
+.item-card:hover  { transform: translateY(-2px); }
+.item-card:active { transform: scale(0.97); }
+
+/* ─── Selected Item Glow ────────────────────────────────────────────────────── */
+.selected-glow {
+  box-shadow: 0 0 0 2px var(--gold), 0 4px 20px rgba(212,175,55,0.3);
 }
