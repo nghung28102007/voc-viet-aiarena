@@ -13,6 +13,7 @@ const CANDIDATE_MODELS = [
 ];
 
 export async function POST(req: NextRequest) {
+  let baseline: CulturalAuditResult | null = null;
   try {
     const body = await req.json();
 
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
     const garmentId = garmentData.id ?? body.garmentId ?? 'ao-ngu-than';
     const garmentName = garmentData.name ?? body.garmentName ?? 'Áo Ngũ Thân';
     const garmentColor = garmentData.color ?? body.garmentColor ?? '#2C3E50';
+    const garmentFamily: string | undefined = garmentData.family ?? body.garmentFamily ?? undefined;
 
     const shoesData = body.shoes ?? (Array.isArray(body.footwear) && body.footwear[0] ? { id: body.footwear[0], name: body.footwear[0] } : null);
     const shoeId = shoesData?.id ?? '';
@@ -40,6 +42,7 @@ export async function POST(req: NextRequest) {
       garmentId,
       garmentName,
       garmentColor,
+      garmentFamily,
       shoeId,
       shoeName,
       accessoryId,
@@ -47,7 +50,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Compute deterministic baseline (strictly follows the 3 rubric rules)
-    const baseline = computeDeterministicAudit(normalizedInput);
+    baseline = computeDeterministicAudit(normalizedInput);
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -70,6 +73,7 @@ BẢN PHỐI CẦN THẨM ĐỊNH:
 - Bối cảnh sự kiện: ${occasionLabel} (ID: ${occasionId})
 - Trang phục cốt lõi: ${garmentName} (Màu: ${garmentColor}) ${isCustom ? `[LƯU Ý QUAN TRỌNG: Đây là trang phục người dùng tải lên mang tên "${garmentName}". Hãy nhìn ảnh thực tế và nhận định đúng theo kiểu dáng và tên này. TUYỆT ĐỐI KHÔNG tự động coi đây là Áo Ngũ Thân nếu trang phục không phải là Áo Ngũ Thân.]` : '[Cổ phục mẫu di sản]'}
 - Độ nhạy cảm di sản: ${garmentSensitivity}
+- Dòng trang phục (nhận diện khi tải lên): ${garmentFamily ?? 'chưa rõ'}
 - Giày dép: ${shoeName || 'Chưa chọn giày'} (ID: ${shoeId})
 - Phụ kiện: ${accessoryName || 'Không có phụ kiện'} (ID: ${accessoryId})
 
@@ -104,13 +108,17 @@ QUY ĐỊNH ĐẦU RA (CHỈ TRẢ VỀ JSON HỢP LỆ THEO CẤU TRÚC):
     if (body.garmentImage && typeof body.garmentImage === 'string' && body.garmentImage.startsWith('data:')) {
       const mimeMatch = body.garmentImage.match(/data:([^;]+);/);
       const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
-      const base64Data = body.garmentImage.replace(/^data:[^;]+;base64,/, '');
-      contentParts.push({
-        inlineData: {
-          mimeType,
-          data: base64Data,
-        },
-      });
+      // Gemini inlineData only supports raster images (PNG, JPEG, WebP, HEIC).
+      // SVG (image/svg+xml) will cause HTTP 400 from Gemini API!
+      if (!mimeType.includes('svg') && !mimeType.includes('xml')) {
+        const base64Data = body.garmentImage.replace(/^data:[^;]+;base64,/, '');
+        contentParts.push({
+          inlineData: {
+            mimeType,
+            data: base64Data,
+          },
+        });
+      }
     }
 
     contentParts.push({ text: prompt });
@@ -159,13 +167,20 @@ QUY ĐỊNH ĐẦU RA (CHỈ TRẢ VỀ JSON HỢP LỆ THEO CẤU TRÚC):
 
       // Guardrail verification: ensure AI respects hard boundaries
       if (occasionId === 'temple') {
-        const isModernFootwear = shoeId && !shoeId.includes('traditional') && !shoeId.includes('hai') && !shoeId.includes('guoc');
+        const isTraditionalFootwear =
+          shoeId.includes('traditional') ||
+          shoeId.includes('hai') ||
+          shoeId.includes('guoc') ||
+          shoeId === 'sandals' ||
+          shoeName.toLowerCase().includes('hài') ||
+          shoeName.toLowerCase().includes('guốc');
+        const isModernFootwear = shoeId && !isTraditionalFootwear;
         const isSun = accessoryId.includes('sunglasses') || accessoryName.toLowerCase().includes('kính');
         if (isModernFootwear || isSun) {
           aiResult.score = Math.min(aiResult.score, 42); // Must drop below 45
           aiResult.status = 'violation';
           if (!aiResult.correctionNotice) {
-            aiResult.correctionNotice = baseline.correctionNotice;
+            aiResult.correctionNotice = baseline?.correctionNotice ?? null;
           }
         }
       }
@@ -176,21 +191,24 @@ QUY ĐỊNH ĐẦU RA (CHỈ TRẢ VỀ JSON HỢP LỆ THEO CẤU TRÚC):
 
     // If Gemini failed on all models, return normalized baseline with custom garment insight
     console.warn('[audit] All Gemini models unavailable, using baseline');
-    return NextResponse.json(baseline);
+    if (baseline) return NextResponse.json(baseline);
   } catch (err) {
     console.error('[audit] Handler error:', err);
-    return NextResponse.json(
-      computeDeterministicAudit({
-        occasionId: 'street',
-        occasionLabel: 'Dạo Phố',
-        garmentId: 'ao-ngu-than',
-        garmentName: 'Áo Ngũ Thân',
-        garmentColor: '#2C3E50',
-        shoeId: '',
-        shoeName: '',
-        accessoryId: '',
-        accessoryName: '',
-      })
-    );
+    if (baseline) return NextResponse.json(baseline);
   }
+
+  // Ultimate fallback if request body parsing failed before baseline calculation
+  return NextResponse.json(
+    computeDeterministicAudit({
+      occasionId: 'street',
+      occasionLabel: 'Dạo Phố',
+      garmentId: 'ao-ngu-than',
+      garmentName: 'Áo Ngũ Thân',
+      garmentColor: '#2C3E50',
+      shoeId: '',
+      shoeName: '',
+      accessoryId: '',
+      accessoryName: '',
+    })
+  );
 }

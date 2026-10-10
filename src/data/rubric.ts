@@ -6,6 +6,7 @@ export interface NormalizedAuditInput {
   garmentId: string;
   garmentName: string;
   garmentColor: string;
+  garmentFamily?: string;
   shoeId: string;
   shoeName: string;
   accessoryId: string;
@@ -27,6 +28,7 @@ export function computeDeterministicAudit(input: NormalizedAuditInput): Cultural
     occasionId,
     garmentId,
     garmentName,
+    garmentFamily,
     shoeId,
     shoeName,
     accessoryId,
@@ -71,8 +73,12 @@ export function computeDeterministicAudit(input: NormalizedAuditInput): Cultural
     accessoryId.includes('handbag') ||
     accessoryName.toLowerCase().includes('túi');
 
-  const isNhatBinh = garmentId === 'ao-nhat-binh';
-  const isNguThanOrTuThan = garmentId === 'ao-ngu-than' || garmentId === 'ao-tu-than';
+  const isNhatBinh = garmentId === 'ao-nhat-binh' || garmentFamily === 'nhat-binh';
+  // Trang phục di sản hợp với phối sneaker kiểu streetwear (preset + đồ upload Gemini nhận ra)
+  const isNguThanOrTuThan =
+    garmentId === 'ao-ngu-than' ||
+    garmentId === 'ao-tu-than' ||
+    ['ngu-than', 'tu-than', 'ao-dai', 'ba-ba'].includes(garmentFamily ?? '');
 
   // ── RULE 3: Missing Footwear or Missing Garment (-25 points) ──
   if (!hasShoes || !hasGarment) {
@@ -130,9 +136,11 @@ export function computeDeterministicAudit(input: NormalizedAuditInput): Cultural
   }
 
   const gNameLower = (garmentName || '').toLowerCase();
-  const isNhatBinhMatched = garmentId === 'ao-nhat-binh' || gNameLower.includes('nhật bình');
-  const isTuThanMatched = garmentId === 'ao-tu-than' || gNameLower.includes('tứ thân');
-  const isNguThanMatched = garmentId === 'ao-ngu-than' || gNameLower.includes('ngũ thân');
+  const isNhatBinhMatched = garmentId === 'ao-nhat-binh' || garmentFamily === 'nhat-binh' || gNameLower.includes('nhật bình');
+  const isTuThanMatched = garmentId === 'ao-tu-than' || garmentFamily === 'tu-than' || gNameLower.includes('tứ thân');
+  const isNguThanMatched = garmentId === 'ao-ngu-than' || garmentFamily === 'ngu-than' || gNameLower.includes('ngũ thân');
+  const isAoDaiMatched = garmentFamily === 'ao-dai' || gNameLower.includes('áo dài');
+  const isBaBaMatched = garmentFamily === 'ba-ba' || gNameLower.includes('bà ba');
 
   // Cultural Insight per garment
   let culturalInsight = '';
@@ -142,6 +150,10 @@ export function computeDeterministicAudit(input: NormalizedAuditInput): Cultural
     culturalInsight = 'Áo Tứ Thân biểu trưng cho bốn đức tính tốt đẹp của người phụ nữ Việt (công, dung, ngôn, hạnh). Thường đi kèm với chiếc yếm thắm và dải thắt lưng buông lơi đậm chất quan họ Kinh Bắc.';
   } else if (isNguThanMatched) {
     culturalInsight = 'Áo Ngũ Thân lập lĩnh định hình từ thời chúa Nguyễn Phúc Khoát và vua Minh Mạng, tượng trưng cho tứ thân phụ mẫu che chở đứa con (thân thứ năm) và đạo ngũ thường nhân - nghĩa - lễ - trí - tín.';
+  } else if (isAoDaiMatched) {
+    culturalInsight = 'Áo dài hiện đại hình thành từ áo ngũ thân, được cách tân ôm dáng hơn vào thập niên 1930 với đóng góp của các họa sĩ như Cát Tường và Lê Phổ. Ngày nay áo dài là trang phục biểu trưng của phụ nữ Việt.';
+  } else if (isBaBaMatched) {
+    culturalInsight = 'Áo bà ba gắn với đời sống sông nước Nam Bộ: phom suôn gọn, cài khuy giữa, thoải mái khi lao động, thường mặc cùng quần lụa hoặc vải.';
   } else {
     culturalInsight = `Trang phục "${garmentName || 'Áo dài / Cổ phục'}" mang hơi thở độc đáo của văn hóa trang phục Việt, kết hợp giữa phom dáng truyền thống và nét chấm phá nghệ thuật đương đại.`;
   }

@@ -8,9 +8,9 @@ const aoDaiHoaNhiSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 270" width="150" height="270">
   <defs>
     <linearGradient id="coralSilk" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#EB8A70"/>
-      <stop offset="50%" stopColor="#DF7357"/>
-      <stop offset="100%" stopColor="#C85A3E"/>
+      <stop offset="0%" stop-color="#EB8A70"/>
+      <stop offset="50%" stop-color="#DF7357"/>
+      <stop offset="100%" stop-color="#C85A3E"/>
     </linearGradient>
     <g id="flower1">
       <circle cx="0" cy="-4" r="2.8" fill="#FFF5F2"/>
@@ -66,9 +66,9 @@ const aoBaBaSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 270" width="150" height="270">
   <defs>
     <linearGradient id="indigoSilk" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#3F6B88"/>
-      <stop offset="40%" stopColor="#2E526B"/>
-      <stop offset="100%" stopColor="#1E394C"/>
+      <stop offset="0%" stop-color="#3F6B88"/>
+      <stop offset="40%" stop-color="#2E526B"/>
+      <stop offset="100%" stop-color="#1E394C"/>
     </linearGradient>
   </defs>
 
@@ -104,9 +104,9 @@ const aoTacHoangKimSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 270" width="150" height="270">
   <defs>
     <linearGradient id="goldBrocade" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#ECC44A"/>
-      <stop offset="50%" stopColor="#D4AF37"/>
-      <stop offset="100%" stopColor="#AA8518"/>
+      <stop offset="0%" stop-color="#ECC44A"/>
+      <stop offset="50%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#AA8518"/>
     </linearGradient>
     <pattern id="cloudPattern" width="30" height="30" patternUnits="userSpaceOnUse">
       <path d="M 5 20 Q 15 10 25 20" stroke="#FFEBA8" stroke-width="1.2" fill="none" opacity="0.6"/>

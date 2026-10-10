@@ -69,9 +69,34 @@ export interface CulturalAuditResult {
 
 // ─── Inspect Item ─────────────────────────────────────────────────────────────
 
+/** Garment family recognised by Gemini Vision for user-uploaded clothes. */
+export type GarmentFamily =
+  | 'ao-dai'
+  | 'ba-ba'
+  | 'ngu-than'
+  | 'tu-than'
+  | 'nhat-binh'
+  | 'khac';
+
+/** Normalised bounding box (all values 0–1, relative to the inspected image). */
+export interface NormalizedBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface InspectItemResult {
   label: string;
   category: AccessoryCategory;
   confidence: number;
   placement: { x: number; y: number };
+  /** Only meaningful when category === 'garment' */
+  garmentFamily?: GarmentFamily;
+  /** True when a person is still visible wearing the item */
+  wornByPerson?: boolean;
+  /** Tight box around the main item, so the client can crop without guessing */
+  box?: NormalizedBox;
+  /** 'gemini' = real model answer, 'fallback' = mock / client-side guess */
+  source?: 'gemini' | 'fallback';
 }

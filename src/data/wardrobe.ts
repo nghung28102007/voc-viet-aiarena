@@ -1,4 +1,4 @@
-import { Garment } from '@/types';
+import { Garment, GarmentFamily, NormalizedBox } from '@/types';
 import { GARMENTS } from '@/data/heritage';
 
 // ─── StudioItem Contract ──────────────────────────────────────────────────────
@@ -11,6 +11,11 @@ export interface StudioItem {
   renderAssetUrl?: string; // Transparent PNG / SVG data URL
   dominantColor?: string; // Hex extracted from fabric
   patternUrl?: string; // Cropped fabric texture URL for SVG <pattern>
+  garmentFamily?: GarmentFamily;      // Gemini nhận diện khi upload (áo dài, bà ba, ...)
+  box?: NormalizedBox;                // khung bao quanh áo trong renderAssetUrl (0-1)
+  cutoutUrl?: string;                 // ảnh áo đã cắt theo box, giữ tỉ lệ (data URL)
+  cutoutAspect?: number;              // width / height của cutoutUrl
+  wornByPerson?: boolean;             // ảnh còn người mặc
   anchorSlot: 'garment' | 'head' | 'wrist' | 'hand' | 'feet' | 'eyes';
   transform?: {
     scale?: number;

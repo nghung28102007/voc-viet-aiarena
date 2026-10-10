@@ -57,6 +57,7 @@ export default function StudioPage() {
         garmentId: activeGarmentId,
         garmentName: activeGarmentName,
         garmentColor: selectedColor,
+        garmentFamily: customGarment?.garmentFamily,
         shoeId: selectedShoe?.id ?? '',
         shoeName: selectedShoe?.name ?? '',
         accessoryId: selectedAccessory?.id ?? '',
@@ -81,15 +82,19 @@ export default function StudioPage() {
     if (item.anchorSlot === 'garment') {
       let dominantColor = item.dominantColor;
       let patternUrl = item.patternUrl;
+      let cutoutUrl = item.cutoutUrl;
+      let cutoutAspect = item.cutoutAspect;
 
-      // Extract fabric color for the indicator badge if not provided
-      if ((!dominantColor || !patternUrl) && item.renderAssetUrl) {
+      // Extract fabric colour, pattern and (when Gemini gave a box) the full garment cutout
+      if ((!dominantColor || !patternUrl || (item.box && !cutoutUrl)) && item.renderAssetUrl) {
         try {
-          const extracted = await extractFabricProperties(item.renderAssetUrl);
+          const extracted = await extractFabricProperties(item.renderAssetUrl, item.box);
           dominantColor = dominantColor || extracted.dominantColor;
           patternUrl = patternUrl || extracted.patternUrl;
+          cutoutUrl = cutoutUrl || extracted.cutoutUrl;
+          cutoutAspect = cutoutAspect || extracted.cutoutAspect;
         } catch (e) {
-          console.warn('[handleAddUGC] fabric color extraction fallback:', e);
+          console.warn('[handleAddUGC] fabric extraction fallback:', e);
         }
       }
 
@@ -97,6 +102,8 @@ export default function StudioPage() {
         ...item,
         dominantColor: dominantColor || '#8B1E1E',
         patternUrl: patternUrl || item.renderAssetUrl,
+        cutoutUrl,
+        cutoutAspect,
       };
 
       setCustomItems((prev) => [garmentItem, ...prev]);
@@ -138,6 +145,7 @@ export default function StudioPage() {
             name: activeGarmentName,
             isCustom,
             color: selectedColor,
+            family: customGarment?.garmentFamily ?? null,
             sensitivity: customGarment
               ? 'TRUNG BÌNH (Trang phục truyền thống cách tân / trang phục cá nhân)'
               : selectedGarment.id === 'ao-nhat-binh'
@@ -154,7 +162,7 @@ export default function StudioPage() {
           garmentColor: selectedColor,
           footwear: selectedShoe ? [selectedShoe.name] : [],
           accessories: selectedAccessory ? [selectedAccessory.name] : [],
-          garmentImage: customGarment?.patternUrl || customGarment?.renderAssetUrl || null,
+          garmentImage: customGarment?.cutoutUrl || customGarment?.patternUrl || customGarment?.renderAssetUrl || null,
         }),
       });
 
@@ -172,6 +180,7 @@ export default function StudioPage() {
         garmentId: activeGarmentId,
         garmentName: activeGarmentName,
         garmentColor: selectedColor,
+        garmentFamily: customGarment?.garmentFamily,
         shoeId: selectedShoe?.id ?? '',
         shoeName: selectedShoe?.name ?? '',
         accessoryId: selectedAccessory?.id ?? '',
@@ -245,11 +254,20 @@ export default function StudioPage() {
                 setSelectedColor(item.dominantColor);
               }
             }}
-            onSelectColor={setSelectedColor}
+            onSelectColor={(c) => {
+              setSelectedColor(c);
+              setIsAiAudited(false);
+            }}
             selectedShoe={selectedShoe}
             selectedAccessory={selectedAccessory}
-            onSelectShoe={setSelectedShoe}
-            onSelectAccessory={setSelectedAccessory}
+            onSelectShoe={(s) => {
+              setSelectedShoe(s);
+              setIsAiAudited(false);
+            }}
+            onSelectAccessory={(a) => {
+              setSelectedAccessory(a);
+              setIsAiAudited(false);
+            }}
             customItems={customItems}
             onAddUGC={handleAddUGC}
           />
@@ -295,6 +313,7 @@ export default function StudioPage() {
               {/* Studio Canvas Stage */}
               <div className="xl:col-span-6 w-full flex justify-center">
                 <StudioCanvas
+                  key={customGarment?.id ?? 'preset'}
                   garmentName={selectedGarment.name}
                   garmentColor={selectedColor}
                   customGarment={customGarment}
@@ -309,7 +328,10 @@ export default function StudioPage() {
                   result={auditResult}
                   isLoading={isAuditing}
                   onReAudit={handleAudit}
-                  onSelectColor={setSelectedColor}
+                  onSelectColor={(c) => {
+                    setSelectedColor(c);
+                    setIsAiAudited(false);
+                  }}
                   onExportLookbook={() => setShowLookbook(true)}
                   disableColorChange={!!customGarment}
                 />
