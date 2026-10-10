@@ -201,7 +201,7 @@ export default function StudioPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-[family-name:var(--font-playfair)] font-bold text-lg text-[#1F1E1D]">
-              Sắc Việt
+              Vóc Việt
             </span>
             <span className="hidden sm:inline text-xs text-[#9A8F84] font-mono">
               • Phòng Thử Đồ & Thẩm Định Văn Hóa AI
@@ -311,6 +311,7 @@ export default function StudioPage() {
                   onReAudit={handleAudit}
                   onSelectColor={setSelectedColor}
                   onExportLookbook={() => setShowLookbook(true)}
+                  disableColorChange={!!customGarment}
                 />
               </div>
             </div>
@@ -337,7 +338,7 @@ export default function StudioPage() {
       {/* ── Footer ── */}
       <footer className="shrink-0 px-4 py-2 border-t border-[#E8E2D9] bg-white/70 text-[10px] text-[#9A8F84] font-mono">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <span>Sắc Việt (Co-Mix Studio) · AI Arena VNU × Google 2026</span>
+          <span>Vóc Việt (Co-Mix Studio) · AI Arena VNU × Google 2026</span>
           <span>Bảo Tồn Di Sản · Thẩm Định Văn Hóa Chuẩn Mực</span>
         </div>
       </footer>

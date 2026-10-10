@@ -1,10 +1,10 @@
-# Sắc Việt — Co-Mix Studio & Cultural Safety Engine
+# Vóc Việt — Co-Mix Studio & Cultural Safety Engine
 ## Developer & Product Handoff Document (Hackathon Edition)
 
 ---
 
 ## 🎯 Executive Overview
-"Sắc Việt (Co-Mix Studio)" is an AI-powered styling and cultural guardrail platform for Gen Z wearing modern-mixed Vietnamese traditional garments (*Việt phục*).
+"Vóc Việt (Co-Mix Studio)" is an AI-powered styling and cultural guardrail platform for Gen Z wearing modern-mixed Vietnamese traditional garments (*Việt phục*).
 - **Core Value:** Zero-friction interactive styling + Realtime cultural safety evaluation (no clunky 3D try-on, instant deterministic + generative feedback).
 - **Event:** AI Arena (VNU × Google) Hackathon.
 
@@ -13,7 +13,7 @@
 ## 🏛️ System Architecture
 
 ```
-sac-viet/
+voc-viet/
 ├── src/
 │   ├── app/
 │   │   ├── api/
@@ -107,4 +107,4 @@ The cultural safety engine evaluates combinations based on rigorous heritage gui
 
 ---
 
-*Sắc Việt (Co-Mix Studio) · AI Arena VNU × Google 2026*
+*Vóc Việt (Co-Mix Studio) · AI Arena VNU × Google 2026*

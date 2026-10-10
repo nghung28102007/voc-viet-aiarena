@@ -1,4 +1,4 @@
-# 🎯 BẢNG ĐIỀU PHỐI MULTI-AGENT TASK FORCE — DỰ ÁN SẮC VIỆT
+# 🎯 BẢNG ĐIỀU PHỐI MULTI-AGENT TASK FORCE — DỰ ÁN VÓC VIỆT
 
 > **Mục tiêu:** Tinh gọn hệ thống, giải quyết triệt để lỗi phá hỏng hoa văn áo, dọn sạch ung nhọt bộ nhớ và thiết lập luồng upload 1-click không ma sát.
 

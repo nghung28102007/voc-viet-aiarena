@@ -13,7 +13,7 @@ export interface NormalizedAuditInput {
 }
 
 /**
- * Deterministic Rubric Scoring Engine for Sắc Việt.
+ * Deterministic Rubric Scoring Engine for Vóc Việt.
  * Strictly adheres to hackathon cultural safety criteria:
  * - Base score: 70
  * - Temple + Traditional: 90 - 95 (safe)

@@ -282,48 +282,6 @@ export default function UploadCustomItem({
               Thử Lại
             </button>
           )}
-
-          {/* Quick Preset Samples for Judges / Fast Demo */}
-          {stage === 'idle' && (
-            <div className="pt-3 border-t border-[#E8E2D9] space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-bold text-[#8B1E1E] uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles size={12} className="text-[#D4AF37]" />
-                  Mẫu thử nhanh (Dành cho BGK):
-                </p>
-                <span className="text-[10px] text-[#9A8F84] font-medium">1-Click nạp đồ</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                {QUICK_SAMPLES.map((sample) => (
-                  <button
-                    key={sample.id}
-                    type="button"
-                    onClick={() => {
-                      onAddItem(sample);
-                      onClose();
-                    }}
-                    className="p-2 rounded-xl border border-[#E8E2D9] bg-[#FAF8F5] hover:border-[#D4AF37] hover:bg-white transition-all text-left flex flex-col items-center gap-1.5 cursor-pointer group shadow-2xs hover:shadow-xs"
-                  >
-                    <div className="size-10 rounded-lg bg-white border border-[#E8E2D9]/80 overflow-hidden flex items-center justify-center p-0.5 group-hover:scale-105 transition-transform">
-                      {sample.renderAssetUrl ? (
-                        <img
-                          src={sample.renderAssetUrl}
-                          alt={sample.name}
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      ) : (
-                        <span className="text-base">👘</span>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-semibold text-[#1F1E1D] text-center leading-tight line-clamp-2">
-                      {sample.name.replace(' Cách Tân', '').replace(' Nam Bộ', '')}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </motion.div>
     </motion.div>

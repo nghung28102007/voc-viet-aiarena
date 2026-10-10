@@ -113,7 +113,7 @@ export default function WardrobeStudio({
           </span>
         </div>
         <h1 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[#1F1E1D] leading-tight mt-0.5">
-          Sắc Việt
+          Vóc Việt
         </h1>
         <p className="text-[11px] text-[#9A8F84] tracking-widest uppercase mt-0.5">
           Co‑Mix Studio & Cultural Guardrail
@@ -261,55 +261,6 @@ export default function WardrobeStudio({
                 </div>
               )}
 
-              {/* Quick Preset Samples for Judges / Fast Demo */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-bold text-[#8B1E1E] uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles size={12} className="text-[#D4AF37]" />
-                    Mẫu thử nhanh (Dành cho BGK)
-                  </p>
-                  <span className="text-[10px] text-[#9A8F84] font-medium">1-Click nạp đồ</span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {QUICK_SAMPLES.map((sample) => {
-                    const isSelected = customGarment?.id === sample.id;
-                    return (
-                      <button
-                        key={sample.id}
-                        type="button"
-                        onClick={() => {
-                          onSelectCustomGarment(sample);
-                          if (sample.dominantColor) {
-                            onSelectColor(sample.dominantColor);
-                          }
-                        }}
-                        className={`p-2 rounded-xl border transition-all text-left flex flex-col items-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs ${
-                          isSelected
-                            ? 'border-[#D4AF37] bg-[#D4AF37]/15 ring-2 ring-[#D4AF37]'
-                            : 'border-[#E8E2D9] bg-[#FAF8F5] hover:border-[#D4AF37] hover:bg-white'
-                        }`}
-                      >
-                        <div className="size-11 rounded-lg bg-white border border-[#E8E2D9]/80 overflow-hidden flex items-center justify-center p-0.5">
-                          {sample.renderAssetUrl ? (
-                            <img
-                              src={sample.renderAssetUrl}
-                              alt={sample.name}
-                              className="max-h-full max-w-full object-contain"
-                            />
-                          ) : (
-                            <span className="text-base">👘</span>
-                          )}
-                        </div>
-                        <span className="text-[10px] font-semibold text-[#1F1E1D] text-center leading-tight line-clamp-2">
-                          {sample.name.replace(' Cách Tân', '').replace(' Nam Bộ', '')}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Preset Garment Cards */}
               <div className="space-y-2">
                 <p className="text-[11px] font-bold text-[#9A8F84] uppercase tracking-wider">
@@ -352,7 +303,53 @@ export default function WardrobeStudio({
                     </motion.button>
                   );
                 })}
-              </div>
+              
+                {QUICK_SAMPLES.map((sample) => {
+                  const isSelected = customGarment?.id === sample.id;
+                  return (
+                    <motion.button
+                      key={sample.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        onSelectCustomGarment(sample);
+                        if (sample.dominantColor) {
+                          onSelectColor(sample.dominantColor);
+                        }
+                      }}
+                      className={`w-full text-left p-3 rounded-2xl border-2 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-[#D4AF37] bg-[#D4AF37]/8 shadow-xs'
+                          : 'border-[#E8E2D9] bg-white hover:border-[#C8B98A]'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="size-10 rounded-xl shrink-0 border-2 border-white shadow-xs bg-[#FAF8F5] overflow-hidden flex items-center justify-center p-0.5"
+                        >
+                          {sample.renderAssetUrl ? (
+                            <img
+                              src={sample.renderAssetUrl}
+                              alt={sample.name}
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          ) : (
+                            <span className="text-base">✨</span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-sm text-[#1F1E1D] truncate">{sample.name.replace(' Cách Tân', '').replace(' Nam Bộ', '')}</p>
+                          <p className="text-[11px] text-[#9A8F84] truncate">Mẫu thiết kế đính kèm</p>
+                        </div>
+                        {isSelected && (
+                          <div className="size-5 rounded-full bg-[#D4AF37] flex items-center justify-center shrink-0">
+                            <Check size={12} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
+</div>
 
               {/* Color Palette */}
               <div className="space-y-2">

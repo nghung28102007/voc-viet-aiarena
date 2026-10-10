@@ -30,6 +30,44 @@ export default function LookbookModal({
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [previewImg, setPreviewImg] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    async function generatePreview() {
+      const svgElement = document.querySelector('svg.drop-shadow-sm') as SVGSVGElement | null;
+      if (!svgElement) return;
+
+      const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
+      clonedSvg.setAttribute('width', '300');
+      clonedSvg.setAttribute('height', '450');
+      clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+      const images = clonedSvg.querySelectorAll('image');
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        const href = img.getAttribute('href') || img.getAttribute('xlink:href');
+        if (href && href.startsWith('blob:')) {
+          try {
+            const res = await fetch(href);
+            const blob = await res.blob();
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            img.setAttribute('href', base64);
+          } catch (e) {
+            console.warn('Failed to convert blob URL', e);
+          }
+        }
+      }
+
+      const svgString = new XMLSerializer().serializeToString(clonedSvg);
+      setPreviewImg(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`);
+    }
+
+    generatePreview();
+  }, []);
 
   // Fallback defaults
   const score = auditResult?.score ?? 88;
@@ -48,12 +86,19 @@ export default function LookbookModal({
   const handleDownload = useCallback(async () => {
     setIsExporting(true);
     try {
-      // Find the SVG element in canvas if present
-      const svgElement = document.querySelector('svg.drop-shadow-sm') as SVGSVGElement | null;
-      let svgDataUrl = '';
-      if (svgElement) {
-        const svgString = new XMLSerializer().serializeToString(svgElement);
-        svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+      let svgDataUrl = previewImg;
+
+      // Fallback if previewImg not generated yet
+      if (!svgDataUrl) {
+        const svgElement = document.querySelector('svg.drop-shadow-sm') as SVGSVGElement | null;
+        if (svgElement) {
+          const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
+          clonedSvg.setAttribute('width', '300');
+          clonedSvg.setAttribute('height', '450');
+          clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          const svgString = new XMLSerializer().serializeToString(clonedSvg);
+          svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+        }
       }
 
       // Create an offscreen HTML5 canvas for high-DPI export (1080x1440)
@@ -95,7 +140,7 @@ export default function LookbookModal({
       ctx.textAlign = 'center';
       ctx.fillStyle = '#8B1E1E';
       ctx.font = 'bold 38px "Playfair Display", serif, "Times New Roman"';
-      ctx.fillText('SẮC VIỆT • CO-MIX STUDIO', width / 2, 110);
+      ctx.fillText('VÓC VIỆT • CO-MIX STUDIO', width / 2, 110);
 
       ctx.fillStyle = '#9A8F84';
       ctx.font = 'bold 18px monospace, sans-serif';
@@ -226,7 +271,7 @@ export default function LookbookModal({
       // 8. Watermark Footer
       ctx.fillStyle = '#9A8F84';
       ctx.font = '15px monospace';
-      ctx.fillText('AI ARENA 2026 • GOOGLE GEMINI 3.8 / FLASH • SAC-VIET.VN', width / 2, 1390);
+      ctx.fillText('AI ARENA 2026 • GOOGLE GEMINI 3.8 / FLASH • VOC-VIET.VN', width / 2, 1390);
 
       // Convert to blob and download
       canvas.toBlob((blob) => {
@@ -234,7 +279,7 @@ export default function LookbookModal({
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `sac-viet-lookbook-${Date.now()}.png`;
+        a.download = `voc-viet-lookbook-${Date.now()}.png`;
         a.click();
         URL.revokeObjectURL(url);
       }, 'image/png');
@@ -277,7 +322,7 @@ export default function LookbookModal({
           <div className="flex items-center gap-2">
             <span className="size-2 rounded-full bg-[#8B1E1E]" />
             <span className="text-xs font-bold text-[#1F1E1D] font-mono uppercase tracking-wider">
-              Thẻ Di Sản Sắc Việt
+              Thẻ Di Sản Vóc Việt
             </span>
           </div>
 
@@ -298,7 +343,7 @@ export default function LookbookModal({
                 VNU × Google AI Arena 2026
               </span>
               <h2 className="font-[family-name:var(--font-playfair)] text-xl font-black text-[#1F1E1D]">
-                Sắc Việt • Lookbook Di Sản
+                Vóc Việt • Lookbook Di Sản
               </h2>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#E8E2D9] text-[10px] font-semibold text-[#524B43]">
                 <span>Bối cảnh:</span>
@@ -324,6 +369,13 @@ export default function LookbookModal({
                 </span>
               </div>
             </div>
+
+            {/* Mannequin Preview */}
+            {previewImg && (
+              <div className="flex justify-center bg-[#FAF8F5] rounded-xl border border-[#E8E2D9] py-4 relative overflow-hidden">
+                <img src={previewImg} alt="Lookbook Mannequin" className="h-[240px] w-auto object-contain drop-shadow-sm" />
+              </div>
+            )}
 
             {/* Gemini Summary Quote */}
             <div className="p-3 rounded-xl bg-white border border-[#E8E2D9] text-xs text-[#4A443C] italic leading-relaxed text-pretty">

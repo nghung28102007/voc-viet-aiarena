@@ -17,12 +17,12 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Sắc Việt — Co-Mix Studio',
+  title: 'Vóc Việt — Co-Mix Studio',
   description:
     'Phối đồ Việt phục hiện đại với AI đánh giá văn hóa realtime. Dành cho Gen Z yêu di sản Việt.',
-  keywords: ['Việt phục', 'Áo Dài', 'AI styling', 'VNU', 'Google', 'AI Arena', 'Sắc Việt'],
+  keywords: ['Việt phục', 'Áo Dài', 'AI styling', 'VNU', 'Google', 'AI Arena', 'Vóc Việt'],
   openGraph: {
-    title: 'Sắc Việt — Co-Mix Studio',
+    title: 'Vóc Việt — Co-Mix Studio',
     description: 'AI-powered Vietnamese traditional garment styling platform',
     type: 'website',
   },

@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
       : 'TRUNG BÌNH (Trang phục truyền thống chuẩn mực)';
 
     const prompt = `
-Bạn là chuyên gia thẩm định văn hóa trang phục Việt Nam cấp cao thuộc dự án "Sắc Việt (Co-Mix Studio)".
+Bạn là chuyên gia thẩm định văn hóa trang phục Việt Nam cấp cao thuộc dự án "Vóc Việt (Co-Mix Studio)".
 Nhiệm vụ: Chấm điểm và thẩm định văn hóa cho bản phối trang phục dưới đây theo THANG ĐIỂM NGHIÊM NGẶT (STRICT RUBRIC).
 
 BẢN PHỐI CẦN THẨM ĐỊNH:

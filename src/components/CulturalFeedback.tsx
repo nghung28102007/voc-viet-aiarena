@@ -23,6 +23,7 @@ interface CulturalFeedbackProps {
   onReAudit?: () => void;
   onSelectColor?: (hex: string) => void;
   onExportLookbook?: () => void;
+  disableColorChange?: boolean;
 }
 
 const STATUS_CONFIG: Record<
@@ -56,6 +57,7 @@ export default function CulturalFeedback({
   onReAudit,
   onSelectColor,
   onExportLookbook,
+  disableColorChange = false,
 }: CulturalFeedbackProps) {
   const [expanded, setExpanded] = useState(true);
 
@@ -209,9 +211,11 @@ export default function CulturalFeedback({
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-bold text-[#9A8F84] uppercase tracking-wider flex items-center gap-1.5">
                         <Palette size={12} className="text-[#D4AF37]" />
-                        Bảng màu gợi ý (Click đổi màu trực tiếp)
+                        Bảng màu gợi ý {!disableColorChange && '(Click đổi màu trực tiếp)'}
                       </span>
-                      <span className="text-[9px] font-mono text-[#D4AF37] font-semibold">Tương tác 2 chiều</span>
+                      {!disableColorChange && (
+                        <span className="text-[9px] font-mono text-[#D4AF37] font-semibold">Tương tác 2 chiều</span>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -219,15 +223,24 @@ export default function CulturalFeedback({
                         <button
                           key={chip.hex}
                           type="button"
-                          onClick={() => onSelectColor?.(chip.hex)}
-                          title={`Click để áp dụng màu ${chip.name} (${chip.hex})`}
-                          className="flex items-center gap-1.5 bg-[#FAF8F5] border border-[#E8E2D9] px-2.5 py-1.5 rounded-xl shadow-xs hover:border-[#D4AF37] hover:bg-white hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+                          onClick={() => !disableColorChange && onSelectColor?.(chip.hex)}
+                          disabled={disableColorChange}
+                          title={disableColorChange ? `${chip.name} (${chip.hex})` : `Click để áp dụng màu ${chip.name} (${chip.hex})`}
+                          className={`flex items-center gap-1.5 bg-[#FAF8F5] border border-[#E8E2D9] px-2.5 py-1.5 rounded-xl shadow-xs transition-all ${
+                            disableColorChange
+                              ? 'opacity-90'
+                              : 'hover:border-[#D4AF37] hover:bg-white hover:scale-105 active:scale-95 cursor-pointer group'
+                          }`}
                         >
                           <span
-                            className="size-3.5 rounded-full border border-black/10 shrink-0 shadow-2xs group-hover:ring-2 group-hover:ring-[#D4AF37]/50 transition-all"
+                            className={`size-3.5 rounded-full border border-black/10 shrink-0 shadow-2xs transition-all ${
+                              !disableColorChange ? 'group-hover:ring-2 group-hover:ring-[#D4AF37]/50' : ''
+                            }`}
                             style={{ backgroundColor: chip.hex }}
                           />
-                          <span className="text-[10px] font-semibold text-[#1F1E1D] font-mono group-hover:text-[#8B1E1E]">
+                          <span className={`text-[10px] font-semibold text-[#1F1E1D] font-mono ${
+                            !disableColorChange ? 'group-hover:text-[#8B1E1E]' : ''
+                          }`}>
                             {chip.name}
                           </span>
                         </button>

@@ -1,10 +1,10 @@
 ﻿@echo off
 chcp 65001 >nul 2>&1
-title Sac Viet - Co-Mix Studio (AI Arena)
+title Voc Viet - Co-Mix Studio (AI Arena)
 color 0F
 
 echo ============================================================
-echo   SAC VIET (CO-MIX STUDIO) - AI ARENA VNU x GOOGLE
+echo   VOC VIET (CO-MIX STUDIO) - AI ARENA VNU x GOOGLE
 echo ============================================================
 echo.
 
@@ -18,14 +18,14 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-REM Di chuyen vao thu muc du an sac-viet
+REM Di chuyen vao thu muc du an voc-viet
 cd /d "%~dp0"
-if exist "%~dp0sac-viet\package.json" (
-    cd /d "%~dp0sac-viet"
+if exist "%~dp0voc-viet\package.json" (
+    cd /d "%~dp0voc-viet"
 )
 
 if not exist "package.json" (
-    echo [LOI] Khong tim thay thu muc sac-viet chua file package.json!
+    echo [LOI] Khong tim thay thu muc voc-viet chua file package.json!
     echo Thu muc hien tai: %CD%
     echo.
     pause

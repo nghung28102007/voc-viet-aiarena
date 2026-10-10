@@ -42,7 +42,7 @@ export const StudioCanvas: React.FC<Props> = ({
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[#8B1E1E]" />
           <span className="font-mono text-[11px] tracking-widest uppercase text-neutral-500 font-bold">
-            Sắc Việt • Studio
+            Vóc Việt • Studio
           </span>
         </div>
 
