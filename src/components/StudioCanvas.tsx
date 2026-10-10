@@ -35,7 +35,15 @@ export const StudioCanvas: React.FC<Props> = ({
   const [nudgeX, setNudgeX] = React.useState(0);
   const [nudgeY, setNudgeY] = React.useState(0);
   const [nudgeScale, setNudgeScale] = React.useState(1);
+  const [shoeNudgeX, setShoeNudgeX] = React.useState(0);
+  const [shoeNudgeY, setShoeNudgeY] = React.useState(0);
+  const [shoeNudgeScale, setShoeNudgeScale] = React.useState(1);
+  const [nudgeTarget, setNudgeTarget] = React.useState<'garment' | 'shoe'>('garment');
   const [shapeChoice, setShapeChoice] = React.useState<ShapeMode | null>(null);
+
+  // Detect whether selected shoes are user-uploaded (not a fixed 68x28 preset vector)
+  const isUgcShoe = !!selectedShoes && (selectedShoes.id.startsWith('ugc-') || !selectedShoes.renderAssetUrl?.includes('viewBox="0 0 68 28"'));
+  const effectiveNudgeTarget = isUgcShoe && !customGarment ? 'shoe' : nudgeTarget;
 
   // Dominant fabric color and clean pattern graphic
   const effectiveColor = customGarment?.dominantColor || garmentColor || '#8B1E1E';
@@ -58,6 +66,11 @@ export const StudioCanvas: React.FC<Props> = ({
     }
     return { x: GARMENT_AREA.centerX - w / 2, y: GARMENT_AREA.top, w, h };
   })();
+
+  // UGC footwear needs a taller, grounded bounding box (feet resting on the ground shadow at y=425)
+  const shoeRect = isUgcShoe
+    ? { x: 112, y: 372, width: 76, height: 54, align: 'xMidYMax meet' }
+    : { x: ANCHORS.feet.x, y: ANCHORS.feet.y, width: ANCHORS.feet.width, height: ANCHORS.feet.height, align: 'xMidYMid meet' };
 
   const nudgeTransform = `translate(${nudgeX}, ${nudgeY}) scale(${nudgeScale})`;
 
@@ -140,17 +153,17 @@ export const StudioCanvas: React.FC<Props> = ({
           {selectedShoes && (
             <g
               id="dynamic-shoes-slot"
-              transform={`translate(${selectedShoes.transform?.offsetX || 0}, ${selectedShoes.transform?.offsetY || 0}) scale(${selectedShoes.transform?.scale || 1})`}
-              style={{ transformOrigin: '150px 395px' }}
+              transform={`translate(${(selectedShoes.transform?.offsetX || 0) + shoeNudgeX}, ${(selectedShoes.transform?.offsetY || 0) + shoeNudgeY}) scale(${(selectedShoes.transform?.scale || 1) * shoeNudgeScale})`}
+              style={{ transformOrigin: '150px 410px' }}
             >
               {selectedShoes.renderAssetUrl ? (
                 <image
                   href={selectedShoes.renderAssetUrl}
-                  x={ANCHORS.feet.x}
-                  y={ANCHORS.feet.y}
-                  width={ANCHORS.feet.width}
-                  height={ANCHORS.feet.height}
-                  preserveAspectRatio="xMidYMid meet"
+                  x={shoeRect.x}
+                  y={shoeRect.y}
+                  width={shoeRect.width}
+                  height={shoeRect.height}
+                  preserveAspectRatio={shoeRect.align}
                 />
               ) : null}
             </g>
@@ -291,15 +304,36 @@ export const StudioCanvas: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Quick alignment micro-toolbar when custom garment is active — Positioned in the bottom corner */}
-        {customGarment && (
+        {/* Quick alignment micro-toolbar when custom garment or custom shoes are active */}
+        {(customGarment || isUgcShoe) && (
           <div className="absolute bottom-2 right-2 z-30 flex items-center gap-0.5 bg-white/95 backdrop-blur-md px-1.5 py-1 rounded-xl border border-neutral-200/80 shadow-xs text-[9px] text-neutral-600 select-none">
+            {customGarment && isUgcShoe && (
+              <div className="flex bg-neutral-100 p-0.5 rounded-lg mr-0.5 font-bold text-[8px]">
+                <button
+                  type="button"
+                  onClick={() => setNudgeTarget('garment')}
+                  className={`px-1.5 py-0.5 rounded cursor-pointer ${nudgeTarget === 'garment' ? 'bg-white shadow-2xs text-[#1F1E1D]' : 'text-neutral-500 hover:text-neutral-700'}`}
+                >
+                  Áo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNudgeTarget('shoe')}
+                  className={`px-1.5 py-0.5 rounded cursor-pointer ${nudgeTarget === 'shoe' ? 'bg-white shadow-2xs text-[#1F1E1D]' : 'text-neutral-500 hover:text-neutral-700'}`}
+                >
+                  Giày
+                </button>
+              </div>
+            )}
             <span className="font-mono text-[8px] text-neutral-400 font-semibold px-0.5">
-              {mode === 'original' ? 'Căn áo:' : 'Căn hoa văn:'}
+              {effectiveNudgeTarget === 'shoe' ? 'Căn giày:' : mode === 'original' ? 'Căn áo:' : 'Căn hoa văn:'}
             </span>
             <button
               type="button"
-              onClick={() => setNudgeX((x) => x - 3)}
+              onClick={() => {
+                if (effectiveNudgeTarget === 'shoe') setShoeNudgeX((x) => x - 3);
+                else setNudgeX((x) => x - 3);
+              }}
               aria-label="Dịch sang trái"
               className="size-5 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 rounded text-[9px] font-bold cursor-pointer transition-colors"
               title="Dịch sang trái"
@@ -308,7 +342,10 @@ export const StudioCanvas: React.FC<Props> = ({
             </button>
             <button
               type="button"
-              onClick={() => setNudgeX((x) => x + 3)}
+              onClick={() => {
+                if (effectiveNudgeTarget === 'shoe') setShoeNudgeX((x) => x + 3);
+                else setNudgeX((x) => x + 3);
+              }}
               aria-label="Dịch sang phải"
               className="size-5 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 rounded text-[9px] font-bold cursor-pointer transition-colors"
               title="Dịch sang phải"
@@ -317,7 +354,10 @@ export const StudioCanvas: React.FC<Props> = ({
             </button>
             <button
               type="button"
-              onClick={() => setNudgeY((y) => y - 3)}
+              onClick={() => {
+                if (effectiveNudgeTarget === 'shoe') setShoeNudgeY((y) => y - 3);
+                else setNudgeY((y) => y - 3);
+              }}
               aria-label="Nâng lên"
               className="size-5 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 rounded text-[9px] font-bold cursor-pointer transition-colors"
               title="Nâng lên"
@@ -326,7 +366,10 @@ export const StudioCanvas: React.FC<Props> = ({
             </button>
             <button
               type="button"
-              onClick={() => setNudgeY((y) => y + 3)}
+              onClick={() => {
+                if (effectiveNudgeTarget === 'shoe') setShoeNudgeY((y) => y + 3);
+                else setNudgeY((y) => y + 3);
+              }}
               aria-label="Hạ xuống"
               className="size-5 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 rounded text-[9px] font-bold cursor-pointer transition-colors"
               title="Hạ xuống"
@@ -335,7 +378,10 @@ export const StudioCanvas: React.FC<Props> = ({
             </button>
             <button
               type="button"
-              onClick={() => setNudgeScale((s) => Math.max(0.7, Number((s - 0.04).toFixed(2))))}
+              onClick={() => {
+                if (effectiveNudgeTarget === 'shoe') setShoeNudgeScale((s) => Math.max(0.6, Number((s - 0.04).toFixed(2))));
+                else setNudgeScale((s) => Math.max(0.7, Number((s - 0.04).toFixed(2))));
+              }}
               aria-label="Thu nhỏ"
               className="size-5 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 rounded text-[9px] font-bold cursor-pointer transition-colors"
               title="Thu nhỏ"
@@ -344,20 +390,29 @@ export const StudioCanvas: React.FC<Props> = ({
             </button>
             <button
               type="button"
-              onClick={() => setNudgeScale((s) => Math.min(1.4, Number((s + 0.04).toFixed(2))))}
+              onClick={() => {
+                if (effectiveNudgeTarget === 'shoe') setShoeNudgeScale((s) => Math.min(1.8, Number((s + 0.04).toFixed(2))));
+                else setNudgeScale((s) => Math.min(1.4, Number((s + 0.04).toFixed(2))));
+              }}
               aria-label="Phóng to"
               className="size-5 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 rounded text-[9px] font-bold cursor-pointer transition-colors"
               title="Phóng to"
             >
               +
             </button>
-            {(nudgeX !== 0 || nudgeY !== 0 || nudgeScale !== 1) && (
+            {((effectiveNudgeTarget === 'shoe' ? shoeNudgeX !== 0 || shoeNudgeY !== 0 || shoeNudgeScale !== 1 : nudgeX !== 0 || nudgeY !== 0 || nudgeScale !== 1)) && (
               <button
                 type="button"
                 onClick={() => {
-                  setNudgeX(0);
-                  setNudgeY(0);
-                  setNudgeScale(1);
+                  if (effectiveNudgeTarget === 'shoe') {
+                    setShoeNudgeX(0);
+                    setShoeNudgeY(0);
+                    setShoeNudgeScale(1);
+                  } else {
+                    setNudgeX(0);
+                    setNudgeY(0);
+                    setNudgeScale(1);
+                  }
                 }}
                 className="text-[8px] text-[#8B1E1E] font-semibold hover:underline px-1 cursor-pointer"
               >
